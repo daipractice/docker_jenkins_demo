@@ -1,0 +1,66 @@
+pipeline{
+	agent any
+	
+	environment {
+		// Define environment variable for Git and Docker hub Credentials
+		GIT_REPOSITORY_URL=  'https://github.com/daipractice/docker_jenkins_demo.git'
+		DOCKER_IMAGE_NAME = 'daipractice/docker_jenkins_demo'
+		IMAGE_TAG = '1.0' // Make sure to use string for tag
+	}
+
+	stages {
+	    stage('Clone Repository') {
+ 		steps {
+ 		    script{
+		        try {
+				git branch: 'main', url: GIT_REPOSITORY_URL
+		        } catch (Exception e) {
+			    echo "Failed to clone repository: ${e.message}"
+			    error "Failed yo clone repository"
+	                }	    
+		    }
+		 }
+	    } 
+	    
+	    stage('Build Docker Image') {
+
+		steps {
+		   // Build Docker Image using Diockerfile in repository
+		    script {
+			try {
+				docker.build(DOCKER_IMAGE_NAME)
+			} catch (Exception e) {
+				echo "Failed to build docker image: ${e.message}"
+				error "Failed to build Docker iamge"
+			}
+
+		    }
+		}
+
+	    }
+
+	    stage('Push to DockerHub') {
+                steps {   
+                   // Login to DockerHub and push Docker Image
+                    script { 
+                        try {
+                                withCredentials([usernamePassword(credentialsId :'my-docker-hub-credentials-id', 
+				usernameVariable: 'daipractice', passwordVariable: 'Mitali@19')] ) {
+					docker.withRegistry('https://index.docker.io/v1/') {
+						docker.image(DOCKER_IMAGE_NAME).push(IMAGE_TAG)
+					}
+				}
+
+                        } catch (Exception e) {
+                                echo "Failed to push docker image to registry:  ${e.message}"
+                                error "Failed to push  Docker iamge"
+                        }
+
+                    }
+                }
+            }
+	}
+
+}
+			
+        
